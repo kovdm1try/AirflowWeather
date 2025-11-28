@@ -34,13 +34,14 @@ AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS=admin(имя пользователя):
 AIRFLOW__CORE__AUTH_MANAGER=airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
 
 AIRFLOW__API_AUTH__JWT_SECRET=<любая длинная ключ строка>
+AIRFLOW__CORE__FERNET_KEY=<любая длинная ключ строка>
 
 AIRFLOW_UID=50000
 AIRFLOW_GID=0
 ```
 ---
 ```bash
-# Так можно сгенерировать код
+# Так можно сгенерировать ключ строку
 docker run --rm my-airflow:3.1.3 python -c "from cryptography.fernet import Fernet; print(Fern
 et.generate_key().decode())"
 ---
@@ -58,7 +59,7 @@ docker compose up --build
   [http://localhost:8080](http://localhost:8080)
 * Логин/пароль (simple auth): 
     1. Логин указывается в `.env` файле
-    2. Пароль модно узнать с помощью команды:
+    2. Пароль можно узнать с помощью команды:
   ```bash
     docker compose exec airflow-api-server cat /opt/airflow/simple_auth_manager_passwords.json.generated                     
     ```
