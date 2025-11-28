@@ -17,7 +17,7 @@ services:
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       # Ключ, необходимый для миграции
-      AIRFLOW__CORE__FERNET_KEY: "long-long-string-key"
+      AIRFLOW__CORE__FERNET_KEY: "${AIRFLOW__CORE__FERNET_KEY}"
     command: [ "airflow", "db", "migrate" ]
 
   # --- 2. API server + UI (Web в Airflow 3) ---
@@ -31,7 +31,7 @@ services:
     environment:
       # Настройки БД и FERNET_KEY
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: "LqpZJL7GRBwleV-WeTuUKfwLvNsH6z2Qg70Q_v2FNlM="
+      AIRFLOW__CORE__FERNET_KEY: "${AIRFLOW__CORE__FERNET_KEY}"
 
       # Общие настройки
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -70,7 +70,7 @@ services:
     environment:
       # Настройки БД и FERNET_KEY
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: "LqpZJL7GRBwleV-WeTuUKfwLvNsH6z2Qg70Q_v2FNlM="
+      AIRFLOW__CORE__FERNET_KEY: "${AIRFLOW__CORE__FERNET_KEY}"
 
       # Общие настройки
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -103,7 +103,7 @@ services:
     environment:
       # Настройки БД и FERNET_KEY
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: "LqpZJL7GRBwleV-WeTuUKfwLvNsH6z2Qg70Q_v2FNlM="
+      AIRFLOW__CORE__FERNET_KEY: "${AIRFLOW__CORE__FERNET_KEY}"
 
       # Общие настройки
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
