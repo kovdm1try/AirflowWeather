@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 import requests
 import pandas as pd
@@ -78,7 +79,9 @@ def weather_pipeline():
     def save_data(json_df: str):
         df = pd.read_json(json_df)
 
-        path = f"/opt/airflow/logs/weather_{datetime.utcnow().date()}.csv"
+        os.makedirs('/opt/airflow/logs/csv', exist_ok=True)
+
+        path = f"/opt/airflow/logs/csv/weather_{datetime.utcnow().isoformat().replace(' ', '_').replace(':', '')}.csv"
         df.to_csv(path, index=False)
 
         logging.info("DataFrame saved into %s", path)
