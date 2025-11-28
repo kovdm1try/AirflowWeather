@@ -1,48 +1,141 @@
-## Запуск
-```bash
-# 1. Подготовить директории для DAG'ов, логов и плагинов
-mkdir -p dags logs plugins data
+# airflow-weather
 
-# 2. Собрать кастомный образ Airflow (my-airflow:3.1.3)
-docker compose build
+## Stack
+- **Apache Airflow 3.1.3** (API-server + scheduler + dag-processor)
+- **Docker / Docker Compose**
+- **PostgreSQL 13** (metadata DB Airflow)
+- `requests`, `pandas`
 
-# 3. Запустить только Postgres
-docker compose up -d postgres
+## Структура репозитория
 
-# 4. Инициализировать / мигрировать БД Airflow в Postgres
-docker compose run --rm webserver airflow db migrate
-
-# 5. Запустить весь стек (webserver + scheduler + postgres)
-docker compose up -d
-
-# 6. Проверить, что все контейнеры в статусе Up
-docker compose ps
+```text
+airflow-weather/
+├─ dags/
+│  ├─ test_dag.py          # простой тестовый DAG (hello world)
+│  └─ weather_dag.py       # основной DAG для сбора погоды
+├─ logs/                   # логи Airflow + CSV
+├─ plugins/                # кастомные плагины Airflow
+├─ .env                    # переменные окружения
+├─ docker-compose.yaml     # оркестрация сервисов Airflow + Postgres
+├─ Dockerfile              # билд кастомного образа Airflow
+├─ requirements.txt        # Python-зависимости
+└─ README.md
 ````
 
-## Доступ к веб-интерфейсу
+## 1. Подготовка
 
-После запуска веб-интерфейс доступен по адресу:
+### .env
 
-* [http://localhost:8080](http://localhost:8080)
+В корне проекта должен лежать файл `.env`.
+Пример:
 
-Airflow 3 по умолчанию использует **Simple auth manager**, пользователи и пароли создаются автоматически
-на основе переменной окружения `AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS` (см. `.env`).
+```env
+AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS=admin(имя пользователя):admin(роль)
+AIRFLOW__CORE__AUTH_MANAGER=airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
 
-Чтобы посмотреть сгенерированные пароли для пользователей:
+AIRFLOW__API_AUTH__JWT_SECRET=<любая длинная ключ строка>
 
+AIRFLOW_UID=50000
+AIRFLOW_GID=0
+```
+---
 ```bash
-docker compose exec webserver sh -lc 'echo $AIRFLOW_HOME'
-docker compose exec webserver cat /opt/airflow/simple_auth_manager_passwords.json.generated
+# Так можно сгенерировать код
+docker run --rm my-airflow:3.1.3 python -c "from cryptography.fernet import Fernet; print(Fern
+et.generate_key().decode())"
+---
 ```
 
-## Остановка
+## 2. Запуск инфраструктуры
 
+Из корня репозитория:
 ```bash
-docker compose down
+docker compose up --build
 ```
 
-(если нужно удалить также данные Postgres — `docker compose down -v`)
-
+После успешного старта:
+* Web-интерфейс Airflow будет доступен по адресу:
+  [http://localhost:8080](http://localhost:8080)
+* Логин/пароль (simple auth): 
+    1. Логин указывается в `.env` файле
+    2. Пароль модно узнать с помощью команды:
+  ```bash
+    docker compose exec airflow-api-server cat /opt/airflow/simple_auth_manager_passwords.json.generated                     
+    ```
+---
+Остановить и очистить контейнеры/тома:
+```bash
+docker compose down -v
 ```
-::contentReference[oaicite:0]{index=0}
+---
+
+## 3. Настройка соединения с OpenWeatherMap
+
+1. Зарегистрироваться на [https://openweathermap.org/api](https://openweathermap.org/api) и получить **API key**.
+
+2. В Airflow UI перейти в **Admin → Connections**.
+
+3. Создать новое соединение:
+
+   * **Connection ID**: `openweather-api`
+   * **Connection Type**: `HTTP`
+   * Остальные поля можно оставить пустыми.
+   * В блоке **Extra Fields JSON** указать:
+
+     ```json
+     {
+       "api-key": "ВАШ_API_КЛЮЧ"
+     }
+     ```
+
+4. Сохранить соединение.
+
+Ключ в коде DAG не хранится – используется только через Connection.
+
+## `weather_pipeline` (dags/weather_dag.py)
+
+Основной DAG задания.
+Пайплайн разбит на несколько задач:
+
+1. **get_api_key** – читает API-ключ из соединения `openweather-api`.
+2. **fetch_weather** – делает запросы в OpenWeatherMap для списка городов
+   (например: `["Vladivostok,ru", "Khabarovsk,ru", "Blagoveshchensk,ru"]`),
+   собирает сырые данные о погоде.
+3. **preprocess** – преобразует результат в `pandas.DataFrame`, выполняет
+   простую предобработку и сериализует его.
+4. **save_data** – десериализует DataFrame и сохраняет его в CSV:
+
+   ```text
+   /opt/airflow/logs/weather_YYYY-MM-DD.csv
+   ```
+
+   На хост-машине файл появляется в:
+
+   ```text
+   ./logs/weather_YYYY-MM-DD.csv
+   ```
+
+DAG настроен на выполнение по расписанию (например, `@hourly`), а также
+может быть запущен вручную через UI.
+
+## 5. Логи и результаты
+
+Логи всех задач доступны:
+
+* в UI: вкладка **Grid → Task → Logs**
+* на диске (смонтировано в проект):
+
+  ```text
+  logs/
+    dag_id=weather_pipeline/
+      run_id=.../
+        task_id=fetch_weather/attempt=1.log
+        task_id=preprocess/attempt=1.log
+        task_id=save_data/attempt=1.log
+  ```
+
+CSV-файлы с погодой также лежат в директории `logs/`:
+
+```text
+logs/weather_2025-11-28.csv
 ```

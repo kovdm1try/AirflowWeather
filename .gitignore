@@ -1,5 +1,50 @@
-.venv
-.idea
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# virtual environments
+.venv/
+venv/
+env/
+ENV/
+*.venv/
+
+# packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# pytest / cache
+.pytest_cache/
+.cache/
+
+# --- Airflow / logs / runtime ---
+logs/
+airflow_logs/
+airflow.cfg
+unittests.cfg
+
+# локальные данные, если появятся
+data/
+tmp/
+
+# --- Secrets ---
 .env
-logs
-data
+.env.*
+*.secret
+*.key
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db
