@@ -17,7 +17,7 @@ services:
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       # Ключ, необходимый для миграции
-      AIRFLOW__CORE__FERNET_KEY: "LqpZJL7GRBwleV-WeTuUKfwLvNsH6z2Qg70Q_v2FNlM="
+      AIRFLOW__CORE__FERNET_KEY: "long-long-string-key"
     command: [ "airflow", "db", "migrate" ]
 
   # --- 2. API server + UI (Web в Airflow 3) ---
